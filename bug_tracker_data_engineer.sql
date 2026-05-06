@@ -781,3 +781,112 @@ FROM   sys.triggers
 WHERE  parent_class = 1
 ORDER  BY OnTable, name;
 GO
+
+
+-- ============================================================
+--  BUG TRACKER  --  Seed Data & Verification
+--  Danyal (Data Analyst)
+--  NOTE: Schema, indexes, views, and triggers are defined above
+--        by Ibrahim. This section only seeds realistic data.
+-- ============================================================
+
+-- ============================================================
+-- SECTION 6: SEEDING DATA (FIXED FOR TRIGGER COMPLIANCE)
+-- ============================================================
+
+-- 1. Disable the subtype enforcement trigger temporarily for seeding
+ALTER TABLE ISSUE DISABLE TRIGGER TR_Issue_SubtypeEnforce;
+GO
+
+-- 15 USERS
+INSERT INTO USERS (UserID, FirstName, LastName, Email, Role) VALUES
+(1, 'Aleeza', 'Admin', 'aleeza@company.com', 'Admin'),
+(2, 'Ibrahim', 'Manager', 'ibrahim@company.com', 'Manager'),
+(3, 'Shaheer', 'Manager', 'shaheer@company.com', 'Manager'),
+(4, 'Danyal', 'Dev', 'danyal@company.com', 'Developer'),
+(5, 'Eman', 'Dev', 'eman@company.com', 'Developer'),
+(6, 'Furkan', 'Dev', 'furkan@company.com', 'Developer'),
+(7, 'Gulshan', 'Dev', 'gulshan@company.com', 'Developer'),
+(8, 'Haidar', 'Dev', 'haidar@company.com', 'Developer'),
+(9, 'Bilal', 'Dev', 'bilal@company.com', 'Developer'),
+(10, 'Jameel', 'Dev', 'jameek@company.com', 'Developer'),
+(11, 'Mahad', 'QA', 'mahad@company.com', 'QA'),
+(12, 'Noor', 'QA', 'noor@company.com', 'QA'),
+(13, 'Osman', 'QA', 'osman@company.com', 'QA'),
+(14, 'Ahmad', 'Viewer', 'ahmad@company.com', 'Viewer'),
+(15, 'Talha', 'Manager', 'talha@company.com', 'Manager');
+
+-- 5 PROJECTS
+INSERT INTO PROJECT (ProjectID, Name, Description, StartDate, Status) VALUES
+(1, 'Project Alpha', 'Core Platform Overhaul', '2026-01-01', 'Active'),
+(2, 'Mobile App', 'Android and iOS development', '2026-02-15', 'Active'),
+(3, 'Cloud Migration', 'Legacy data move to AWS', '2026-03-01', 'Active'),
+(4, 'External API', 'Public developer portal', '2026-04-10', 'On Hold'),
+(5, 'Internal CRM', 'Sales tracking system', '2026-05-01', 'Active');
+
+-- PROJECT MANAGERS
+INSERT INTO PROJECT_MEMBER (ProjectID, UserID, MemberRole) VALUES
+(1, 2, 'Manager'), (2, 3, 'Manager'), (3, 15, 'Manager'), (4, 2, 'Manager'), (5, 3, 'Manager');
+
+-- 5 SPRINTS
+INSERT INTO SPRINT (SprintID, Name, StartDate, EndDate, Status, ProjectID) VALUES
+(1, 'Alpha Sprint 1', '2026-05-01', '2026-05-14', 'Active', 1),
+(2, 'Mobile UI 1', '2026-05-01', '2026-05-14', 'Active', 2),
+(3, 'Migration Phase 1', '2026-04-15', '2026-04-30', 'Completed', 3),
+(4, 'CRM Setup', '2026-05-01', '2026-05-20', 'Active', 5),
+(5, 'Sprint Holiday', '2026-06-01', '2026-06-14', 'Planning', 1);
+
+-- LABELS
+INSERT INTO LABEL (LabelID, Name, Color) VALUES (1, 'Front-End', '#3357FF'), (2, 'Back-End', '#FF5733'), (3, 'Security', '#FF0000');
+
+-- SEEDING 50+ ISSUES
+DECLARE @i INT = 1;
+WHILE @i <= 55
+BEGIN
+    DECLARE @pID INT = (@i % 5) + 1;
+    DECLARE @uID INT = (@i % 10) + 1;
+    DECLARE @Type VARCHAR(10) = CASE WHEN @i % 3 = 0 THEN 'Bug' WHEN @i % 3 = 1 THEN 'Feature' ELSE 'Task' END;
+    DECLARE @Priority VARCHAR(10) = CASE WHEN @i % 4 = 0 THEN 'Critical' WHEN @i % 4 = 1 THEN 'High' WHEN @i % 4 = 2 THEN 'Medium' ELSE 'Low' END;
+    
+    INSERT INTO ISSUE (IssueID, Title, Type, Priority, Status, ProjectID, ReporterID, DueDate)
+    VALUES (@i, 'Issue Number ' + CAST(@i AS VARCHAR), @Type, @Priority, 'Open', @pID, @uID, DATEADD(DAY, 7, GETDATE()));
+
+    IF @Type = 'Bug'
+        INSERT INTO BUG (IssueID, Severity) VALUES (@i, 'Major');
+    ELSE IF @Type = 'Feature'
+        INSERT INTO FEATURE (IssueID, BusinessValue) VALUES (@i, 5);
+    ELSE
+        INSERT INTO TASK (IssueID, TaskType) VALUES (@i, 'Testing');
+
+    INSERT INTO ISSUE_ASSIGNMENT (IssueID, UserID) VALUES (@i, 4 + (@i % 7));
+    
+    IF @pID IN (1, 2)
+        INSERT INTO SPRINT_ISSUE (SprintID, IssueID) VALUES (@pID, @i);
+
+    SET @i = @i + 1;
+END;
+
+-- 2. Re-enable the trigger so business rules are back in place
+ALTER TABLE ISSUE ENABLE TRIGGER TR_Issue_SubtypeEnforce;
+GO
+
+-- SIMULATE ACTIVITY
+EXEC sys.sp_set_session_context @key = N'CurrentUserID', @value = 1;
+UPDATE ISSUE SET Status = 'In Progress' WHERE IssueID BETWEEN 1 AND 10;
+UPDATE ISSUE SET Status = 'In Review' WHERE IssueID BETWEEN 1 AND 5;
+UPDATE ISSUE SET Status = 'Done' WHERE IssueID IN (1, 2, 11, 12, 13);
+GO
+
+-- ============================================================
+-- VERIFICATION QUERIES
+-- ============================================================
+
+-- Table and View Checklist
+SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME;
+SELECT TABLE_NAME AS ViewName FROM INFORMATION_SCHEMA.VIEWS ORDER BY TABLE_NAME;
+
+-- Data Verification
+SELECT * FROM VW_OPEN_ISSUES_PER_PROJECT;
+SELECT * FROM VW_DEVELOPER_WORKLOAD;
+SELECT * FROM VW_SPRINT_VELOCITY;
+SELECT * FROM VW_RECENT_ACTIVITY;
