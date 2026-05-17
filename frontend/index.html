@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BugTracker — Command Center</title>
+  <meta name="description" content="High-tech Bug Tracking command center for monitoring project health, developer workload, and issue telemetry." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ======== AMBIENT BACKGROUND ELEMENTS ======== -->
+  <div class="ambient-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="grid-lines"></div>
+  </div>
+
+  <!-- ======== SIDEBAR ======== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-mark">
+        <i class="ph ph-bug-beetle"></i>
+      </div>
+      <span class="logo-text">BUGTRACKER</span>
+      <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+        <i class="ph ph-caret-left"></i>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <ul>
+        <li>
+          <a href="#" class="nav-link active" data-view="dashboard" id="nav-dashboard">
+            <i class="ph ph-chart-bar"></i>
+            <span class="nav-label">Command Center</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-link" data-view="report-bug" id="nav-report-bug">
+            <i class="ph ph-bug"></i>
+            <span class="nav-label">Report Anomaly</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-link" data-view="issues" id="nav-issues">
+            <i class="ph ph-list-checks"></i>
+            <span class="nav-label">Issue Registry</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-link" data-view="projects" id="nav-projects">
+            <i class="ph ph-folders"></i>
+            <span class="nav-label">Projects</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="system-status">
+        <div class="status-dot" id="healthDot"></div>
+        <span class="nav-label" id="healthLabel">Checking DB...</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ======== MAIN CONTENT ======== -->
+  <main class="main-content" id="mainContent">
+
+    <!-- ====== DASHBOARD VIEW ====== -->
+    <section class="view active" id="view-dashboard">
+      <header class="view-header">
+        <div>
+          <h1 class="view-title">
+            <i class="ph ph-pulse"></i>
+            Command Center
+          </h1>
+          <p class="view-subtitle">Real-time project telemetry and system health monitoring</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-ghost" id="refreshDashboard">
+            <i class="ph ph-arrows-clockwise"></i>
+            <span>Refresh</span>
+          </button>
+          <div class="timestamp-badge" id="lastUpdated">
+            <i class="ph ph-clock"></i>
+            <span>--:--:--</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Project Status Matrix -->
+      <div class="section-block">
+        <h2 class="section-title">
+          <i class="ph ph-squares-four"></i>
+          Project Status Matrix
+        </h2>
+        <div class="project-grid" id="projectGrid">
+          <!-- JS-rendered -->
+        </div>
+      </div>
+
+      <!-- Developer Workload -->
+      <div class="section-block">
+        <h2 class="section-title">
+          <i class="ph ph-users-three"></i>
+          Resource Capacity
+        </h2>
+        <div class="workload-table-wrap glass-panel" id="workloadPanel">
+          <table class="data-table" id="workloadTable">
+            <thead>
+              <tr>
+                <th>Developer</th>
+                <th>Role</th>
+                <th>Assigned</th>
+                <th>Active</th>
+                <th>Overdue</th>
+                <th>Resolved</th>
+                <th>Load</th>
+              </tr>
+            </thead>
+            <tbody id="workloadBody">
+              <!-- JS-rendered -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="section-block">
+        <h2 class="section-title">
+          <i class="ph ph-terminal-window"></i>
+          Live Telemetry
+        </h2>
+        <div class="activity-feed glass-panel" id="activityFeed">
+          <div class="feed-list" id="feedList">
+            <!-- JS-rendered -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== REPORT BUG VIEW ====== -->
+    <section class="view" id="view-report-bug">
+      <header class="view-header">
+        <div>
+          <h1 class="view-title">
+            <i class="ph ph-warning-diamond"></i>
+            Anomaly Submission
+          </h1>
+          <p class="view-subtitle">File a new bug report into the tracking system</p>
+        </div>
+      </header>
+
+      <div class="form-container glass-panel">
+        <form id="bugForm" autocomplete="off">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="bugIssueId">Issue ID</label>
+              <input type="number" id="bugIssueId" name="issue_id" placeholder="e.g. 1001" required />
+            </div>
+            <div class="form-group span-2">
+              <label for="bugTitle">Title</label>
+              <input type="text" id="bugTitle" name="title" placeholder="Brief description of the anomaly" required />
+            </div>
+            <div class="form-group">
+              <label for="bugPriority">Priority</label>
+              <select id="bugPriority" name="priority" required>
+                <option value="" disabled selected>Select priority</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="bugSeverity">Severity</label>
+              <select id="bugSeverity" name="severity" required>
+                <option value="" disabled selected>Select severity</option>
+                <option value="Trivial">Trivial</option>
+                <option value="Minor">Minor</option>
+                <option value="Major">Major</option>
+                <option value="Critical">Critical</option>
+                <option value="Blocker">Blocker</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="bugProjectId">Project ID</label>
+              <input type="number" id="bugProjectId" name="project_id" placeholder="e.g. 1" required />
+            </div>
+            <div class="form-group">
+              <label for="bugReporterId">Reporter ID</label>
+              <input type="number" id="bugReporterId" name="reporter_id" placeholder="e.g. 5" required />
+            </div>
+            <div class="form-group">
+              <label for="bugDueDate">Due Date</label>
+              <input type="date" id="bugDueDate" name="due_date" />
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="reset" class="btn btn-ghost">
+              <i class="ph ph-eraser"></i> Clear
+            </button>
+            <button type="submit" class="btn btn-primary btn-glow" id="submitBug">
+              <i class="ph ph-paper-plane-tilt"></i>
+              <span>Submit Anomaly</span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Response area -->
+        <div class="response-display" id="bugResponse" style="display:none;">
+          <pre id="bugResponseContent"></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== ISSUES LIST VIEW ====== -->
+    <section class="view" id="view-issues">
+      <header class="view-header">
+        <div>
+          <h1 class="view-title">
+            <i class="ph ph-list-checks"></i>
+            Issue Registry
+          </h1>
+          <p class="view-subtitle">Complete list of tracked issues — click any Issue ID to update its status</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-ghost" id="refreshIssues">
+            <i class="ph ph-arrows-clockwise"></i>
+            <span>Refresh</span>
+          </button>
+        </div>
+      </header>
+      <div class="workload-table-wrap glass-panel" id="issuesPanel">
+        <table class="data-table" id="issuesTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Due Date</th>
+              <th>Project</th>
+              <th>Reporter</th>
+            </tr>
+          </thead>
+          <tbody id="issuesBody">
+            <!-- JS-rendered -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ====== PROJECTS VIEW ====== -->
+    <section class="view" id="view-projects">
+      <header class="view-header">
+        <div>
+          <h1 class="view-title">
+            <i class="ph ph-folders"></i>
+            Project Management
+          </h1>
+          <p class="view-subtitle">View, create, and update project statuses — click any row to change its status</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-ghost" id="refreshProjects">
+            <i class="ph ph-arrows-clockwise"></i>
+            <span>Refresh</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Projects Table -->
+      <div class="section-block">
+        <h2 class="section-title">
+          <i class="ph ph-table"></i>
+          All Projects
+        </h2>
+        <div class="workload-table-wrap glass-panel">
+          <table class="data-table" id="projectsTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="projectsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Create Project Form -->
+      <div class="section-block">
+        <h2 class="section-title">
+          <i class="ph ph-plus-circle"></i>
+          Create New Project
+        </h2>
+        <div class="form-container glass-panel">
+          <form id="projectForm" autocomplete="off">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="projId">Project ID</label>
+                <input type="number" id="projId" placeholder="e.g. 10" required />
+              </div>
+              <div class="form-group span-2">
+                <label for="projName">Project Name</label>
+                <input type="text" id="projName" placeholder="e.g. Cloud Migration" required />
+              </div>
+              <div class="form-group span-2">
+                <label for="projDesc">Description</label>
+                <input type="text" id="projDesc" placeholder="Brief project description" />
+              </div>
+              <div class="form-group">
+                <label for="projStartDate">Start Date</label>
+                <input type="date" id="projStartDate" required />
+              </div>
+              <div class="form-group">
+                <label for="projFormStatus">Initial Status</label>
+                <select id="projFormStatus">
+                  <option value="Active">Active</option>
+                  <option value="On Hold">On Hold</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Archived">Archived</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="reset" class="btn btn-ghost"><i class="ph ph-eraser"></i> Clear</button>
+              <button type="submit" class="btn btn-primary btn-glow" id="submitProject">
+                <i class="ph ph-plus"></i><span>Create Project</span>
+              </button>
+            </div>
+          </form>
+          <div class="response-display" id="projResponse" style="display:none;">
+            <pre id="projResponseContent"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ======== STATUS UPDATE MODAL ======== -->
+  <div class="modal-overlay" id="statusModal">
+    <div class="modal glass-panel">
+      <div class="modal-header">
+        <h2>
+          <i class="ph ph-gear-six"></i>
+          State Mutation Inspector
+        </h2>
+        <button class="modal-close" id="modalClose" aria-label="Close">
+          <i class="ph ph-x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-issue-info" id="modalIssueInfo">
+          <!-- Populated by JS -->
+        </div>
+        <form id="statusForm" autocomplete="off">
+          <div class="form-group">
+            <label for="statusUserId">Operator ID (User ID)</label>
+            <input type="number" id="statusUserId" name="user_id" placeholder="Enter your User ID" required />
+          </div>
+          <div class="form-group">
+            <label for="statusNewStatus">New Status</label>
+            <select id="statusNewStatus" name="new_status" required>
+              <option value="" disabled selected>Select new status</option>
+              <option value="Open">Open</option>
+              <option value="In Progress">In Progress</option>
+              <option value="In Review">In Review</option>
+              <option value="Done">Done</option>
+              <option value="Closed">Closed</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost" id="modalCancel">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-glow" id="submitStatus">
+              <i class="ph ph-lightning"></i>
+              <span>Execute Mutation</span>
+            </button>
+          </div>
+        </form>
+
+        <div class="response-display" id="statusResponse" style="display:none;">
+          <pre id="statusResponseContent"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== PROJECT STATUS MODAL ======== -->
+  <div class="modal-overlay" id="projectModal">
+    <div class="modal glass-panel">
+      <div class="modal-header">
+        <h2>
+          <i class="ph ph-gear-six"></i>
+          Update Project Status
+        </h2>
+        <button class="modal-close" id="projModalClose" aria-label="Close">
+          <i class="ph ph-x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-issue-info" id="projModalInfo"></div>
+        <form id="projStatusForm" autocomplete="off">
+          <div class="form-group">
+            <label for="projNewStatus">New Status</label>
+            <select id="projNewStatus" required>
+              <option value="" disabled selected>Select new status</option>
+              <option value="Active">Active</option>
+              <option value="On Hold">On Hold</option>
+              <option value="Completed">Completed</option>
+              <option value="Archived">Archived</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost" id="projModalCancel">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-glow" id="submitProjStatus">
+              <i class="ph ph-lightning"></i><span>Update Status</span>
+            </button>
+          </div>
+        </form>
+        <div class="response-display" id="projStatusResponse" style="display:none;">
+          <pre id="projStatusResponseContent"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== TOAST ======== -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
