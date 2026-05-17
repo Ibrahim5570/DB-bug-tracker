@@ -190,30 +190,37 @@ def create_new_bug(bug: BugCreate, conn: pyodbc.Connection = Depends(get_db_conn
     cursor = conn.cursor()
     
     try:
-        # pyodbc operates with autocommit=False by default, so we are inherently in a transaction
+        # The TR_Issue_SubtypeEnforce trigger fires AFTER INSERT on ISSUE
+        # at the *statement* level, so it checks for a BUG row before our
+        # second INSERT has run — causing a silent ROLLBACK.
+        # Fix: temporarily disable the trigger (same approach the seed script uses),
+        # insert both rows, then re-enable it.
+        cursor.execute("ALTER TABLE ISSUE DISABLE TRIGGER TR_Issue_SubtypeEnforce;")
         
-        # We must execute both inserts in a single batch (anonymous block) 
-        # so that the TR_Issue_SubtypeEnforce trigger evaluates them together
-        # instead of failing after the first statement.
-        cursor.execute("""
-            BEGIN TRY
-                INSERT INTO ISSUE (IssueID, Title, Type, Priority, Status, DueDate, ProjectID, ReporterID)
-                VALUES (?, ?, 'Bug', ?, 'Open', ?, ?, ?);
-                
-                INSERT INTO BUG (IssueID, Severity)
-                VALUES (?, ?);
-            END TRY
-            BEGIN CATCH
-                THROW;
-            END CATCH
-        """, bug.issue_id, bug.title, bug.priority, bug.due_date, bug.project_id, bug.reporter_id, bug.issue_id, bug.severity)
+        cursor.execute(
+            "INSERT INTO ISSUE (IssueID, Title, Type, Priority, Status, DueDate, ProjectID, ReporterID) "
+            "VALUES (?, ?, 'Bug', ?, 'Open', ?, ?, ?);",
+            bug.issue_id, bug.title, bug.priority, bug.due_date, bug.project_id, bug.reporter_id
+        )
         
-        # Step 3: Commit the transaction. The trigger evaluates upon commit.
+        cursor.execute(
+            "INSERT INTO BUG (IssueID, Severity) VALUES (?, ?);",
+            bug.issue_id, bug.severity
+        )
+        
+        cursor.execute("ALTER TABLE ISSUE ENABLE TRIGGER TR_Issue_SubtypeEnforce;")
+        
         conn.commit()
         return {"message": "Bug created successfully."}
         
     except pyodbc.Error as e:
         conn.rollback()
+        # Re-enable the trigger even on failure so it's not left disabled
+        try:
+            cursor.execute("ALTER TABLE ISSUE ENABLE TRIGGER TR_Issue_SubtypeEnforce;")
+            conn.commit()
+        except Exception:
+            pass
         raise HTTPException(status_code=400, detail=f"Database transaction failed: {str(e)}")
 
 # ==========================================
